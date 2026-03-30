@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAVELENGTH CUSTOM - 4 JOUEURS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #13131a;
+            --accent: #ff6b35;
+            --accent2: #ffd23f;
+            --green: #06d6a0;
+            --text: #f0eff4;
+            --muted: #6b6b80;
+            --card: #1c1c28;
+            --border: rgba(255,255,255,0.1);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background:var(--bg); color:var(--text);
+            font-family:'DM Sans',sans-serif;
+            display:flex; flex-direction:column; align-items:center;
+            min-height: 100vh; overflow-x: hidden;
+        }
+
+        /* HEADER SCORES */
+        header {
+            width:100%; max-width:600px; padding:1.5rem;
+            display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+            z-index:10;
+        }
+        .player-score {
+            background: var(--surface); padding: 8px; border-radius: 10px;
+            text-align: center; border: 1px solid var(--border); transition: all 0.3s;
+        }
+        .player-score.active { border-color: var(--accent); box-shadow: 0 0 15px rgba(255,107,53,0.4); transform: translateY(-2px); }
+        .ps-name { font-size: 0.65rem; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ps-pts { font-family: 'Bebas Neue'; font-size: 1.5rem; color: var(--accent2); }
+
+        /* MAIN */
+        main { width:100%; max-width:500px; padding:1rem; }
+        .card { 
+            background:var(--card); border-radius:24px; padding:2rem; 
+            border:1px solid var(--border); box-shadow:0 20px 50px rgba(0,0,0,0.5);
+        }
+        .screen { display:none; flex-direction:column; gap:1.5rem; }
+        .screen.active { display:flex; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* INPUTS */
+        .field { display:flex; flex-direction:column; gap:8px; }
+        label { font-size: 0.7rem; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+        input[type="text"] {
+            background:var(--surface); border:1px solid var(--border); border-radius:12px;
+            padding:12px; color:white; font-size: 1rem; outline: none; transition: border 0.2s;
+        }
+        input[type="text"]:focus { border-color: var(--accent); }
+
+        /* SPECTRE VISUEL & GRADUATIONS */
+        .spectrum-container {
+            position: relative; height: 60px; background: #000; 
+            border-radius: 30px; margin: 10px 0;
+        }
+        .zone { position: absolute; height: 100%; top: 0; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue'; font-size: 0.8rem; pointer-events: none; }
+        .z10 { background: #ffde34; width: 4%; z-index: 5; color: black; box-shadow: 0 0 15px #ffde34; }
+        .z4 { background: #ff9535; width: 10%; z-index: 4; }
+        .z3 { background: #ff6b35; width: 18%; z-index: 3; }
+        .z2 { background: #ef233c; width: 28%; z-index: 2; }
+
+        .target-line {
+            position: absolute; top: 0; height: 100%; width: 4px;
+            background: white; z-index: 10; transform: translateX(-50%);
+            box-shadow: 0 0 15px white;
+        }
+        
+        #target-badge {
+            position: absolute; top: -30px; transform: translateX(-50%);
+            background: var(--accent); color: white; padding: 2px 8px;
+            border-radius: 6px; font-size: 0.9rem; font-weight: bold; font-family: 'Bebas Neue';
+        }
+
+        .ticks {
+            display: flex; justify-content: space-between; padding: 0 5px;
+            margin-top: 8px; color: var(--muted); font-size: 0.65rem; font-family: 'Bebas Neue';
+        }
+
+        /* DIAL (CURSEUR) */
+        .dial-area { position: relative; height: 80px; margin: 20px 0; cursor: pointer; }
+        .dial-track { height: 12px; background: var(--surface); border-radius: 6px; position: absolute; top: 50%; width: 100%; transform: translateY(-50%); }
+        .dial-handle {
+            position: absolute; top: 50%; width: 44px; height: 44px;
+            background: var(--accent); border-radius: 50%; transform: translate(-50%, -50%);
+            border: 4px solid white; box-shadow: 0 0 25px rgba(255,107,53,0.6);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* BOUTONS */
+        .btn {
+            background: var(--accent); color: white; border: none; padding: 16px;
+            border-radius: 14px; font-weight: bold; cursor: pointer; font-size: 1rem;
+            font-family: 'DM Sans'; transition: all 0.2s;
+        }
+        .btn:hover { background: #ff8555; transform: scale(1.02); }
+        .btn:active { transform: scale(0.98); }
+
+        .custom-theme-box { display: flex; gap: 10px; align-items: center; }
+        .vs { font-family: 'Bebas Neue'; color: var(--muted); font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+<header id="player-header"></header>
+
+<main>
+    <div id="screen-setup" class="screen card active">
+        <h2 style="font-family:'Bebas Neue'; font-size: 2.5rem; color: var(--accent);">WAVELENGTH</h2>
+        <p style="color: var(--muted); font-size: 0.9rem;">Entrez les noms des 4 joueurs pour commencer.</p>
+        <div class="field">
+            <input id="p1" placeholder="Joueur 1" value="Guillaume">
+            <input id="p2" placeholder="Joueur 2" value="Ami 1">
+            <input id="p3" placeholder="Joueur 3" value="Ami 2">
+            <input id="p4" placeholder="Joueur 4" value="Ami 3">
+        </div>
+        <button class="btn" onclick="initGame()">Lancer la partie →</button>
+    </div>
+
+    <div id="screen-theme" class="screen card">
+        <div id="turn-badge-ui" style="background: rgba(255,107,53,0.1); color: var(--accent); padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; width: fit-content; margin-bottom: 10px;">TOUR DE X</div>
+        <h3 style="font-family:'Bebas Neue'; font-size: 1.8rem;">Crée ton spectre</h3>
+        <div class="custom-theme-box">
+            <input id="input-left" placeholder="ex: Froid" style="flex:1">
+            <span class="vs">VS</span>
+            <input id="input-right" placeholder="ex: Chaud" style="flex:1">
+        </div>
+        
+        <div style="background:var(--surface); padding:35px 20px 20px; border-radius:20px; position:relative; margin-top:20px;">
+            <label>Position secrète (0 - 100)</label>
+            <div class="spectrum-container" id="secret-preview" style="overflow: visible; background: #000;">
+                <div id="target-badge">50</div>
+                <div class="target-line" id="secret-target"></div>
+            </div>
+            <div class="ticks">
+                <span>0</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span>
+                <span>60</span><span>70</span><span>80</span><span>90</span><span>100</span>
+            </div>
+            <input type="range" id="target-range" min="0" max="100" value="50" style="width:100%; margin-top:25px; cursor: pointer;" oninput="updateSecretPreview()">
+        </div>
+        <button class="btn" onclick="confirmTheme()">Valider la position</button>
+    </div>
+
+    <div id="screen-guess" class="screen card">
+        <div style="text-align:center">
+            <div id="display-theme" style="font-family:'Bebas Neue'; font-size: 2.2rem; color: var(--accent2); text-shadow: 0 0 15px rgba(255,210,63,0.3);"></div>
+            <div id="display-player-hint" style="color:var(--muted); font-size: 0.85rem; margin-top:8px; text-transform: uppercase;"></div>
+        </div>
+        
+        <div class="field" style="margin-top: 10px;">
+            <label>Ton Indice (1 seul mot de préférence)</label>
+            <input id="clue-given" placeholder="Ex: Banquise, Sauna, Café...">
+        </div>
+
+        <div class="dial-area" id="dial-area">
+            <div class="dial-track"></div>
+            <div class="dial-handle" id="dial-handle"></div>
+        </div>
+        
+        <div style="text-align:center; font-family:'Bebas Neue'; font-size: 3rem; color: var(--accent);" id="guess-val">50</div>
+        <button class="btn" onclick="revealResult()">Révéler le résultat !</button>
+    </div>
+
+    <div id="screen-result" class="screen card">
+        <h2 id="result-text" style="text-align:center; font-family:'Bebas Neue'; font-size: 4rem; margin-bottom: -10px;">+4 PTS</h2>
+        <p id="result-msg" style="text-align: center; color: var(--muted); margin-bottom: 15px;"></p>
+        
+        <div class="spectrum-container" style="background: #000; overflow: hidden;">
+            <div id="z-2" class="zone z2"></div>
+            <div id="z-3" class="zone z3"></div>
+            <div id="z-4" class="zone z4"></div>
+            <div id="z-10" class="zone z10"></div>
+            <div class="target-line" id="final-target"></div>
+            <div class="target-line" id="final-guess-line" style="background: var(--accent2); width: 2px; opacity: 0.7;"></div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-around; background: var(--surface); padding: 15px; border-radius: 12px; font-family: 'Bebas Neue'; font-size: 1.1rem;">
+            <div style="color: white;">Cible : <span id="final-target-val" style="color:var(--accent2)">50</span></div>
+            <div style="color: white;">Choix : <span id="final-guess-val" style="color:var(--accent)">50</span></div>
+        </div>
+
+        <button class="btn" onclick="nextTurn()">Joueur Suivant →</button>
+    </div>
+</main>
+
+<script>
+    let players = [];
+    let currentPlayerIndex = 0;
+    let targetValue = 50;
+    let guessValue = 50;
+    let theme = { left: "", right: "" };
+
+    function show(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function initGame() {
+        players = [
+            { name: document.getElementById('p1').value || "J1", score: 0 },
+            { name: document.getElementById('p2').value || "J2", score: 0 },
+            { name: document.getElementById('p3').value || "J3", score: 0 },
+            { name: document.getElementById('p4').value || "J4", score: 0 }
+        ];
+        startTurn();
+    }
+
+    function renderHeader() {
+        const header = document.getElementById('player-header');
+        header.innerHTML = players.map((p, i) => `
+            <div class="player-score ${i === currentPlayerIndex ? 'active' : ''}">
+                <div class="ps-name">${p.name}</div>
+                <div class="ps-pts">${p.score}</div>
+            </div>
+        `).join('');
+    }
+
+    function startTurn() {
+        renderHeader();
+        document.getElementById('turn-badge-ui').textContent = `TOUR DE : ${players[currentPlayerIndex].name}`;
+        document.getElementById('input-left').value = "";
+        document.getElementById('input-right').value = "";
+        document.getElementById('clue-given').value = "";
+        updateSecretPreview();
+        show('screen-theme');
+    }
+
+    function updateSecretPreview() {
+        const val = document.getElementById('target-range').value;
+        targetValue = val;
+        document.getElementById('secret-target').style.left = val + "%";
+        const badge = document.getElementById('target-badge');
+        badge.textContent = val;
+        badge.style.left = val + "%";
+    }
+
+    function confirmTheme() {
+        theme.left = document.getElementById('input-left').value || "Gauche";
+        theme.right = document.getElementById('input-right').value || "Droite";
+        document.getElementById('display-theme').textContent = `${theme.left} ↔ ${theme.right}`;
+        document.getElementById('display-player-hint').textContent = `Indice donné par ${players[currentPlayerIndex].name}`;
+        guessValue = 50;
+        updateDial(50);
+        show('screen-guess');
+    }
+
+    // Gestion du Curseur
+    const dialArea = document.getElementById('dial-area');
+    const handleMove = (e) => {
+        const rect = dialArea.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const x = clientX - rect.left;
+        let pct = Math.round((x / rect.width) * 100);
+        pct = Math.max(0, Math.min(100, pct));
+        guessValue = pct;
+        updateDial(pct);
+    };
+
+    dialArea.addEventListener('mousedown', () => {
+        document.addEventListener('mousemove', handleMove);
+        document.addEventListener('mouseup', () => document.removeEventListener('mousemove', handleMove), {once: true});
+    });
+    dialArea.addEventListener('touchstart', (e) => {
+        document.addEventListener('touchmove', handleMove);
+        document.addEventListener('touchend', () => document.removeEventListener('touchmove', handleMove), {once: true});
+    });
+    dialArea.addEventListener('click', handleMove);
+
+    function updateDial(pct) {
+        document.getElementById('dial-handle').style.left = pct + "%";
+        document.getElementById('guess-val').textContent = pct;
+    }
+
+    function revealResult() {
+        const diff = Math.abs(targetValue - guessValue);
+        let pts = 0;
+        let msg = "Oups... Complètement à côté !";
+
+        if (diff <= 2) { pts = 10; msg = "TÉLÉPATHIE ! 🧠"; }
+        else if (diff <= 5) { pts = 4; msg = "Excellent ! 🎯"; }
+        else if (diff <= 10) { pts = 3; msg = "Pas mal du tout !"; }
+        else if (diff <= 15) { pts = 2; msg = "C'est dans la zone."; }
+
+        players[currentPlayerIndex].score += pts;
+        
+        document.getElementById('final-target').style.left = targetValue + "%";
+        document.getElementById('final-guess-line').style.left = guessValue + "%";
+        document.getElementById('final-target-val').textContent = targetValue;
+        document.getElementById('final-guess-val').textContent = guessValue;
+        document.getElementById('result-text').textContent = `+${pts} PTS`;
+        document.getElementById('result-msg').textContent = msg;
+
+        const t = parseInt(targetValue);
+        setupZone('z-10', t, 2);
+        setupZone('z-4', t, 5);
+        setupZone('z-3', t, 10);
+        setupZone('z-2', t, 15);
+
+        show('screen-result');
+    }
+
+    function setupZone(id, center, range) {
+        const el = document.getElementById(id);
+        el.style.width = (range * 2) + "%";
+        el.style.left = (center - range) + "%";
+    }
+
+    function nextTurn() {
+        currentPlayerIndex = (currentPlayerIndex + 1) % 4;
+        startTurn();
+    }
+</script>
+</body>
+</html>
